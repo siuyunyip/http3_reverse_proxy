@@ -1,0 +1,1 @@
+A reverse proxy written in Go supports concurrent connections with upstream servers to feed responses to the downstream connection.
