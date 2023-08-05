@@ -7,28 +7,6 @@ import (
 	"time"
 )
 
-func setupHandler(root string) http.Handler {
-	mux := http.NewServeMux()
-
-	mux.Handle("/", http.FileServer(http.Dir(root)))
-
-	mux.HandleFunc("/1/", func(w http.ResponseWriter, r *http.Request) {
-
-	})
-
-	mux.HandleFunc("/2/", func(w http.ResponseWriter, r *http.Request) {
-
-	})
-
-	mux.HandleFunc("/3/", func(w http.ResponseWriter, r *http.Request) {
-
-	})
-
-	mux.HandleFunc("/4/", func(w http.ResponseWriter, r *http.Request) {
-
-	})
-}
-
 func main() {
 	port := flag.String("port", "443", "bind to port")
 	domain := flag.String("domain", "dev.cafewithbook.org", "domain name")
@@ -36,7 +14,7 @@ func main() {
 	www := flag.String("www", "./html", "web root")
 	flag.Parse()
 
-	handler := setupHandler(*www)
+	handler := SetupHandler(*www)
 	tc := GetTlsConfig(*domain)
 
 	h2 := &http.Server{
