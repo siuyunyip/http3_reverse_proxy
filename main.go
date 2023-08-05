@@ -1,36 +1,64 @@
 package main
 
 import (
+	"context"
 	"flag"
-	"log"
-	"net/http"
-	"time"
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"github.com/txthinking/runnergroup"
 )
 
 func main() {
 	port := flag.String("port", "443", "bind to port")
 	domain := flag.String("domain", "dev.cafewithbook.org", "domain name")
-	// default: www == ./html
 	www := flag.String("www", "./html", "web root")
 	flag.Parse()
 
-	handler := SetupHandler(*www)
-	tc := GetTlsConfig(*domain)
-
-	h2 := &http.Server{
-		Addr:           ":" + *port,
-		ReadTimeout:    time.Duration(0) * time.Second,
-		WriteTimeout:   time.Duration(0) * time.Second,
-		IdleTimeout:    time.Duration(0) * time.Second,
-		MaxHeaderBytes: 1 << 20,
-		Handler:        handler,
-		ErrorLog:       log.New(&tlserr{}, "", log.LstdFlags),
-		TLSConfig:      tc,
+	h, h2, h3, err := NewServer(*domain, *port, *www)
+	if err != nil {
+		fmt.Println("Fail to start server")
 	}
 
-	h3 := &http.Server{
-		Addr:      ":" + *port,
-		TLSConfig: tc,
-		Handler:   handler,
+	g := runnergroup.New()
+	g.Add(&runnergroup.Runner{
+		Start: func() error {
+			return h.ListenAndServe()
+		},
+		Stop: func() error {
+			return h.Shutdown(context.Background())
+		},
+	})
+	g.Add(&runnergroup.Runner{
+		Start: func() error {
+			return h2.ListenAndServeTLS("", "")
+		},
+		Stop: func() error {
+			return h2.Shutdown(context.Background())
+		},
+	})
+	g.Add(&runnergroup.Runner{
+		Start: func() error {
+			return h3.ListenAndServe()
+		},
+		Stop: func() error {
+			return h3.Close()
+		},
+	})
+
+	go func() {
+		sigs := make(chan os.Signal, 1)
+		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+		<-sigs
+		g.Done()
+	}()
+
+	if err := g.Wait(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+		return
 	}
+
 }
