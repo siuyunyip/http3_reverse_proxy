@@ -17,10 +17,7 @@ func main() {
 	www := flag.String("www", "./html", "web root")
 	flag.Parse()
 
-	h, h2, h3, err := NewServer(*domain, *port, *www)
-	if err != nil {
-		fmt.Println("Fail to start server")
-	}
+	h, h2, h3, wg := NewServer(*domain, *port, *www)
 
 	g := runnergroup.New()
 	g.Add(&runnergroup.Runner{
@@ -53,8 +50,11 @@ func main() {
 		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 		<-sigs
 		g.Done()
+		wg.Done()
 	}()
 
+	// start workers
+	wg.Wait()
 	if err := g.Wait(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

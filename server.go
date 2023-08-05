@@ -2,13 +2,15 @@ package main
 
 import (
 	"github.com/quic-go/quic-go/http3"
+	"github.com/txthinking/runnergroup"
 	"log"
 	"net/http"
 	"time"
 )
 
-func NewServer(domain string, port string, root string) (*http.Server, *http.Server, *http3.Server, error) {
-	handler := SetupHandler(root)
+func NewServer(domain string, port string, root string) (*http.Server, *http.Server, *http3.Server, runnergroup.RunnerGroup) {
+	g, pool := InitWorker()
+	handler := SetupHandler(root, pool.Workers)
 	tc := GetTlsConfig(domain)
 
 	h := &http.Server{
@@ -33,6 +35,5 @@ func NewServer(domain string, port string, root string) (*http.Server, *http.Ser
 		Handler:   handler,
 	}
 
-	return h, h2, h3, nil
-
+	return h, h2, h3, g
 }
