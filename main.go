@@ -17,7 +17,8 @@ func main() {
 	www := flag.String("www", "./html", "web root")
 	flag.Parse()
 
-	h, h2, h3, wg := NewServer(*domain, *port, *www)
+	//h, h2, h3, wg := NewServer(*domain, *port, *www)
+	h, wg := NewServer(*domain, *port, *www)
 
 	g := runnergroup.New()
 	g.Add(&runnergroup.Runner{
@@ -28,22 +29,23 @@ func main() {
 			return h.Shutdown(context.Background())
 		},
 	})
-	g.Add(&runnergroup.Runner{
-		Start: func() error {
-			return h2.ListenAndServeTLS("", "")
-		},
-		Stop: func() error {
-			return h2.Shutdown(context.Background())
-		},
-	})
-	g.Add(&runnergroup.Runner{
-		Start: func() error {
-			return h3.ListenAndServe()
-		},
-		Stop: func() error {
-			return h3.Close()
-		},
-	})
+
+	//g.Add(&runnergroup.Runner{
+	//	Start: func() error {
+	//		return h2.ListenAndServeTLS("", "")
+	//	},
+	//	Stop: func() error {
+	//		return h2.Shutdown(context.Background())
+	//	},
+	//})
+	//g.Add(&runnergroup.Runner{
+	//	Start: func() error {
+	//		return h3.ListenAndServe()
+	//	},
+	//	Stop: func() error {
+	//		return h3.Close()
+	//	},
+	//})
 
 	go func() {
 		sigs := make(chan os.Signal, 1)

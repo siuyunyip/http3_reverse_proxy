@@ -8,10 +8,10 @@ import (
 )
 
 var backends = []string{
-	"127.0.0.1:8001",
-	"127.0.0.1:8002",
-	"127.0.0.1:8003",
-	"127.0.0.1:8004",
+	"http://127.0.0.1:8001",
+	"http://127.0.0.1:8002",
+	"http://127.0.0.1:8003",
+	"http://127.0.0.1:8004",
 }
 
 type reqRsp struct {
@@ -20,7 +20,7 @@ type reqRsp struct {
 }
 
 type Worker struct {
-	channel chan reqRsp
+	channel chan *reqRsp
 	handler http.Handler
 	state   int
 }
@@ -56,19 +56,19 @@ func InitWorker() (runnergroup.RunnerGroup, WorkerPool) {
 func newWorker(to string) (*Worker, error) {
 	u, err := url.Parse(to)
 	if err != nil {
-		fmt.Println("Incorrect upstrema url")
+		fmt.Println("Incorrect upstream url")
 		return nil, err
 	}
 
 	return &Worker{
-		channel: make(chan reqRsp, 100),
+		channel: make(chan *reqRsp, 100),
 		handler: NewSingleHostReverseProxy(u),
 		state:   0,
 	}, nil
 }
 
 func (w Worker) BuffReq(req *http.Request, rsp http.ResponseWriter) {
-	w.channel <- reqRsp{
+	w.channel <- &reqRsp{
 		req: req,
 		rsp: rsp,
 	}
@@ -81,6 +81,8 @@ func (w Worker) Start() error {
 				break
 			}
 			reqrsp := <-w.channel
+			fmt.Println("Get request: ", reqrsp.req.URL)
+			fmt.Println("Remote Addr: ", reqrsp.req.RemoteAddr)
 			w.handler.ServeHTTP(reqrsp.rsp, reqrsp.req)
 		}
 	}()
