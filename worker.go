@@ -23,6 +23,7 @@ type Worker struct {
 	channel chan *reqRsp
 	handler http.Handler
 	state   int
+	id      int
 }
 
 type WorkerPool struct {
@@ -33,8 +34,9 @@ func InitWorker() (runnergroup.RunnerGroup, WorkerPool) {
 	pool := &WorkerPool{Workers: make(map[string]Worker)}
 	g := runnergroup.New()
 
+	var id = 1
 	for _, u := range backends {
-		w, err := newWorker(u)
+		w, err := newWorker(u, id)
 		if err != nil {
 			fmt.Println("Fail to create new worker with url: %s", u)
 			continue
@@ -48,12 +50,13 @@ func InitWorker() (runnergroup.RunnerGroup, WorkerPool) {
 				return w.Stop()
 			},
 		})
+		id += 1
 	}
 
 	return *g, *pool
 }
 
-func newWorker(to string) (*Worker, error) {
+func newWorker(to string, id int) (*Worker, error) {
 	u, err := url.Parse(to)
 	if err != nil {
 		fmt.Println("Incorrect upstream url")
@@ -64,6 +67,7 @@ func newWorker(to string) (*Worker, error) {
 		channel: make(chan *reqRsp, 100),
 		handler: NewSingleHostReverseProxy(u),
 		state:   0,
+		id:      id,
 	}, nil
 }
 
