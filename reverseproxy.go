@@ -211,7 +211,20 @@ func (p *ReverseProxy) modifyResponse(rw http.ResponseWriter, res *http.Response
 func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	transport := p.Transport
 	if transport == nil {
-		transport = http.DefaultTransport
+		//transport = http.DefaultTransport
+		transport = &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			Dial: (&net.Dialer{
+				// Modify the time to wait for a connection to establish
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).Dial,
+			ForceAttemptHTTP2:     false,
+			MaxIdleConns:          2,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		}
 	}
 
 	ctx := req.Context()
