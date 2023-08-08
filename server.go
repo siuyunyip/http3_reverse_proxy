@@ -21,7 +21,7 @@ func NewServer(domain string, port string, root string) (*http.Server, runnergro
 
 	go func() {
 		certFile, keyFile := testdata.GetCertificatePaths()
-		err := http3.ListenAndServe("localhost:6101", certFile, keyFile, handler)
+		err := http3.ListenAndServe(":6101", certFile, keyFile, handler)
 		if err != nil {
 			fmt.Println(err)
 		}
