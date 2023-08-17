@@ -10,7 +10,7 @@ import (
 	"path"
 )
 
-var certPath = "/etc/certs/live/dev.cafewithbook.org"
+var certPath = "/home/ubuntu/quic/certs/live/dev.cafewithbook.org"
 
 func getCertificateKeyPaths() (string, string) {
 	return path.Join(certPath, "cert.pem"), path.Join(certPath, "privkey.pem")

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/quic-go/quic-go/http3"
 	"github.com/txthinking/runnergroup"
-	"naive/testdata"
 	"net/http"
 )
 
@@ -20,7 +19,8 @@ func NewServer(domain string, port string, root string) (*http.Server, runnergro
 	}
 
 	go func() {
-		certFile, keyFile := testdata.GetCertificatePaths()
+		//certFile, keyFile := testdata.GetCertificatePaths()
+		certFile, keyFile := getCertificateKeyPaths()
 		err := http3.ListenAndServe(":6101", certFile, keyFile, handler)
 		if err != nil {
 			fmt.Println(err)

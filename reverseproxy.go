@@ -220,7 +220,7 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 				KeepAlive: 30 * time.Second,
 			}).Dial,
 			ForceAttemptHTTP2:     false,
-			MaxIdleConns:          2,
+			MaxIdleConns:          3,
 			IdleConnTimeout:       90 * time.Second,
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
@@ -276,45 +276,22 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 	outreq.Close = false
 
-	//reqUpType := upgradeType(outreq.Header)
-	//if !IsPrint(reqUpType) {
-	//	p.getErrorHandler()(rw, req, fmt.Errorf("client tried to switch to invalid protocol %q", reqUpType))
-	//	return
-	//}
 	removeConnectionHeaders(outreq.Header)
 
-	// Remove hop-by-hop headers to the backend. Especially
-	// important is "Connection" because we want a persistent
-	// connection, regardless of what the client sent to us.
 	for _, h := range hopHeaders {
 		outreq.Header.Del(h)
 	}
 
-	// Issue 21096: tell backend applications that care about trailer support
-	// that we support trailers. (We do, but we don't go out of our way to
-	// advertise that unless the incoming client request thought it was worth
-	// mentioning.) Note that we look at req.Header, not outreq.Header, since
-	// the latter has passed through removeConnectionHeaders.
 	if httpguts.HeaderValuesContainsToken(req.Header["Te"], "trailers") {
 		outreq.Header.Set("Te", "trailers")
 	}
 
 	// After stripping all the hop-by-hop connection headers above, add back any
-	// necessary for protocol upgrades, such as for websockets.
-	//if reqUpType != "" {
-	//	outreq.Header.Set("Connection", "Upgrade")
-	//	outreq.Header.Set("Upgrade", reqUpType)
-	//}
-
-	// set back connection filed in header for building long-lived connection with upstream
 	outreq.Header.Set("Connection", "")
 
 	if clientIP, _, err := net.SplitHostPort(req.RemoteAddr); err == nil {
-		// If we aren't the first proxy retain prior
-		// X-Forwarded-For information as a comma+space
-		// separated list and fold multiple headers into one.
 		prior, ok := outreq.Header["X-Forwarded-For"]
-		omit := ok && prior == nil // Issue 38079: nil now means don't populate the header
+		omit := ok && prior == nil
 		if len(prior) > 0 {
 			clientIP = strings.Join(prior, ", ") + ", " + clientIP
 		}
